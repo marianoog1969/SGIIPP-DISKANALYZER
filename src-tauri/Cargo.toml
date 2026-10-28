@@ -1,0 +1,22 @@
+[package]
+name = "sgiipp-diskanalizer"
+version = "1.4.1"
+description = "Analizador de espacio en disco para unidades locales y de red"
+authors = ["Servicios de Informática · CIS Guillermo Miranda · Murcia"]
+edition = "2021"
+rust-version = "1.90"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+
+[profile.release]
+panic = "unwind" # el escaneo usa catch_unwind para no dejar la app bloqueada si algo falla
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

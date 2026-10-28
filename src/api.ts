@@ -1,0 +1,46 @@
+import { invoke } from "@tauri-apps/api/core";
+import type {
+  ChildrenPage,
+  Drive,
+  ExportResult,
+  ExtStat,
+  NodeDto,
+  RefreshResult,
+  ReportDefaults,
+  DriveSpace,
+  ScanErr,
+  SearchArgs,
+  SearchResult,
+  SortKey,
+  TopFile,
+} from "./types";
+
+export const api = {
+  startScan: (path: string, threads: number) => invoke<void>("start_scan", { path, threads }),
+  cancelScan: () => invoke<void>("cancel_scan"),
+  children: (id: number, sort: SortKey, desc: boolean, limit: number) =>
+    invoke<ChildrenPage>("get_children", { id, sort, desc, limit }),
+  ancestors: (id: number) => invoke<NodeDto[]>("get_ancestors", { id }),
+  path: (id: number) => invoke<string>("get_path", { id }),
+  topFiles: (limit: number) => invoke<TopFile[]>("get_top_files", { limit }),
+  search: (args: SearchArgs) => invoke<SearchResult>("search", { args }),
+  exportReport: (
+    kind: "folder" | "search",
+    id: number | null,
+    args: SearchArgs | null,
+    format: "pdf" | "csv",
+    path: string,
+    center: string | null,
+    unit: string | null,
+  ) => invoke<ExportResult>("export_report", { kind, id, args, format, path, center, unit }),
+  driveSpace: (path: string) => invoke<DriveSpace | null>("get_drive_space", { path }),
+  reportDefaults: () => invoke<ReportDefaults>("get_report_defaults"),
+  revealPath: (path: string) => invoke<void>("reveal_path", { path }),
+  extensions: (limit: number) => invoke<ExtStat[]>("get_extensions", { limit }),
+  errors: () => invoke<ScanErr[]>("get_errors"),
+  reveal: (id: number) => invoke<void>("reveal", { id }),
+  drives: () => invoke<Drive[]>("list_drives"),
+  startDelete: (ids: number[]) => invoke<void>("start_delete", { ids }),
+  cancelDelete: () => invoke<void>("cancel_delete"),
+  refresh: (id: number) => invoke<RefreshResult>("refresh_node", { id }),
+};
