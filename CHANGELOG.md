@@ -2,6 +2,11 @@
 
 Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade una función, PATCH si solo se corrige un error.
 
+## 1.5.0
+
+- Créditos sin mención a la Secretaría General.
+- «Acerca de»: sección «Apoya el proyecto» con código QR, botón «Donar con PayPal» y «Copiar enlace».
+
 ## 1.4.1
 
 - Nuevo diálogo «Acerca de» con créditos (Servicios de Informática, CIS Guillermo Miranda, Murcia, SGIIPP). También desde el pie.

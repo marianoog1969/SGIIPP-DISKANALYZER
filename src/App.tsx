@@ -4,6 +4,9 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { api } from "./api";
 import Treemap from "./Treemap";
 import Manual from "./Manual";
+import donateQr from "./assets/donate-qr.png";
+
+const DONATE_URL = "https://www.paypal.me/marianoog";
 import ContextMenu, { type MenuEntries, type MenuItem } from "./ContextMenu";
 import { Icon } from "./Icons";
 import { CATEGORY_INFO, categoryOf } from "./colors";
@@ -1498,12 +1501,34 @@ export default function App() {
                 <br />
                 Murcia
               </dd>
-              <dt>Organismo</dt>
-              <dd>Secretaría General de Instituciones Penitenciarias</dd>
               <dt>Tecnología</dt>
               <dd>Rust · Tauri 2 · React</dd>
             </dl>
-            <p className="muted small">© {new Date().getFullYear()} Servicios de Informática · CIS Guillermo Miranda · Murcia. Uso interno.</p>
+            <div className="donate">
+              <img src={donateQr} alt={`Código QR para donar mediante PayPal (${DONATE_URL})`} />
+              <div>
+                <h3>Apoya el proyecto</h3>
+                <p className="muted small">
+                  Si la aplicación te resulta útil, puedes hacer una donación voluntaria.
+                </p>
+                <div className="donate-actions">
+                  <button className="primary" onClick={() => api.openDonate().catch((e) => setError(String(e)))}>
+                    Donar con PayPal
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(DONATE_URL).then(
+                        () => flash("Enlace copiado"),
+                        () => {},
+                      );
+                    }}
+                  >
+                    Copiar enlace
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="muted small">© {new Date().getFullYear()} Servicios de Informática · CIS Guillermo Miranda · Murcia.</p>
             <div className="modal-actions">
               <button className="primary" autoFocus onClick={() => setShowAbout(false)}>
                 Cerrar

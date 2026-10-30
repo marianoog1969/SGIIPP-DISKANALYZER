@@ -333,10 +333,8 @@ const SECTIONS: Section[] = [
           SGIIPP-DISKANALIZER v{__APP_VERSION__}
           <br />
           Servicios de Informática · CIS Guillermo Miranda · Murcia
-          <br />
-          Secretaría General de Instituciones Penitenciarias
         </p>
-        <p>Los créditos también están en el botón «Acerca de» de la barra superior.</p>
+        <p>Los créditos, el enlace y el código QR para donaciones voluntarias (PayPal) están en el botón «Acerca de» de la barra superior.</p>
         <p>
           El historial de cambios de cada versión está en el archivo <code>CHANGELOG.md</code> que acompaña a la
           aplicación.

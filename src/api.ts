@@ -34,6 +34,7 @@ export const api = {
     unit: string | null,
   ) => invoke<ExportResult>("export_report", { kind, id, args, format, path, center, unit }),
   driveSpace: (path: string) => invoke<DriveSpace | null>("get_drive_space", { path }),
+  openDonate: () => invoke<void>("open_donate"),
   reportDefaults: () => invoke<ReportDefaults>("get_report_defaults"),
   revealPath: (path: string) => invoke<void>("reveal_path", { path }),
   extensions: (limit: number) => invoke<ExtStat[]>("get_extensions", { limit }),

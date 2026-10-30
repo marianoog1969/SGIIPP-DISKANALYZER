@@ -1,6 +1,6 @@
 [package]
 name = "sgiipp-diskanalizer"
-version = "1.4.1"
+version = "1.5.0"
 description = "Analizador de espacio en disco para unidades locales y de red"
 authors = ["Servicios de Informática · CIS Guillermo Miranda · Murcia"]
 edition = "2021"

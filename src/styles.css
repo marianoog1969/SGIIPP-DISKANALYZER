@@ -1518,3 +1518,36 @@ footer > span:first-child {
   white-space: nowrap;
 }
 .credits dd{color:var(--text);font-size:13.5px}
+
+.modal.about {
+  width: min(560px, 94vw);
+}
+.donate {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 12px 22px 4px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--hover);
+}
+.donate img {
+  width: 150px;
+  height: auto;
+  border-radius: 8px;
+  background: #fff;
+  flex: none;
+}
+.donate h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.donate p {
+  margin: 0 0 10px;
+}
+.donate-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

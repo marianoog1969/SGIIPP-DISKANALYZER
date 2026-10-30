@@ -640,6 +640,19 @@ fn reveal_path(path: String) -> Result<(), String> {
     open_in_explorer(&p, false)
 }
 
+/// Enlace de donaciones. Es fijo: la interfaz no puede pedir que se abra otra dirección.
+const DONATE_URL: &str = "https://www.paypal.me/marianoog";
+
+/// Abre el enlace de donaciones en el navegador predeterminado.
+#[tauri::command]
+fn open_donate() -> Result<(), String> {
+    #[cfg(windows)]
+    let mut cmd = std::process::Command::new("explorer.exe");
+    #[cfg(not(windows))]
+    let mut cmd = std::process::Command::new("xdg-open");
+    cmd.arg(DONATE_URL).spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn get_extensions(state: State<'_, AppState>, limit: usize) -> Result<Vec<ExtDto>, String> {
     with_tree(&state, |t| {
@@ -946,6 +959,7 @@ fn main() {
             export_report,
             get_report_defaults,
             reveal_path,
+            open_donate,
             get_errors,
             reveal,
             list_drives,
