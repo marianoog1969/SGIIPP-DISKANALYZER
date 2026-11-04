@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { RELEASES, fmtReleaseDate } from "./releases";
 
 interface Section {
   id: string;
@@ -20,6 +21,29 @@ const SECTIONS: Section[] = [
           la propia aplicación.
         </p>
         <p>Funciona solo en Windows y usa las credenciales de la sesión con la que se ha iniciado el equipo.</p>
+      </>
+    ),
+  },
+  {
+    id: "novedades",
+    title: "Novedades",
+    body: (
+      <>
+        <p>Cambios de cada versión, de la más reciente a la más antigua.</p>
+        {RELEASES.map((r, i) => (
+          <section key={r.version} className="release" aria-labelledby={`rel-${r.version}`}>
+            <h3 id={`rel-${r.version}`}>
+              Versión {r.version}
+              {i === 0 && <span className="badge">actual</span>}
+              <time dateTime={r.date}>{fmtReleaseDate(r.date)}</time>
+            </h3>
+            <ul>
+              {r.items.map((it) => (
+                <li key={it}>{it}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </>
     ),
   },
@@ -120,17 +144,71 @@ const SECTIONS: Section[] = [
     title: "Moverse por las carpetas",
     body: (
       <ul>
-        <li>Haz clic en el nombre de una carpeta, o en su rectángulo del mapa, para entrar.</li>
         <li>
-          Usa las migas de pan (la ruta sobre la tabla) para volver a cualquier nivel, o la flecha hacia arriba. También
-          sirven <K>Retroceso</K> y <K>Alt</K>+<K>←</K>.
+          Haz <strong>doble clic</strong> en una carpeta de la tabla, o un clic en su nombre o en su rectángulo del mapa,
+          para entrar. En el mapa, un clic sobre una subcarpeta dibujada dentro de otra entra directamente en ella.
+        </li>
+        <li>
+          Los botones <strong>‹ Atrás</strong> y <strong>› Adelante</strong> (o <K>Alt</K>+<K>←</K> y <K>Alt</K>+<K>→</K>)
+          recorren las carpetas que has visitado, como en un navegador. La flecha hacia arriba (o <K>Retroceso</K>) sube
+          a la carpeta superior, y las migas de pan permiten saltar a cualquier nivel.
         </li>
         <li>
           El botón <strong>⟳ Actualizar</strong> (o <K>F5</K>) vuelve a leer del disco solo la carpeta actual, sin
           repetir todo el escaneo. Es útil si alguien ha cambiado archivos mientras tanto.
         </li>
-        <li>Pulsa en la cabecera de una columna para ordenar por nombre, tamaño, archivos o fecha.</li>
+        <li>Pulsa en la cabecera de una columna para ordenar por nombre, tamaño, archivos, cambio o fecha.</li>
+        <li>
+          Escribe en <strong>Filtrar por nombre</strong> (sobre la tabla) para ver solo las carpetas y archivos cuyo nombre
+          contenga ese texto. <K>Esc</K> borra el filtro.
+        </li>
+        <li>
+          Arrastra el borde derecho de una cabecera para cambiar el ancho de esa columna; doble clic en el borde la
+          devuelve a su ancho original. Los anchos se recuerdan.
+        </li>
       </ul>
+    ),
+  },
+  {
+    id: "cambios",
+    title: "Capacidad y cambios desde el escaneo anterior",
+    body: (
+      <>
+        <p>
+          Junto al total aparece una <strong>barra de capacidad</strong> con el espacio libre de la unidad (en rojo si
+          queda menos del 10 %).
+        </p>
+        <p>
+          Si en <strong>Ajustes</strong> está activado «Recordar escaneos», al volver a escanear la misma ruta aparece la
+          columna <strong>Cambio</strong>: cuánto ha crecido (+, rojo) o disminuido (−, verde) cada carpeta desde la vez
+          anterior, o «nuevo» si no existía. Solo se guardan los tamaños de las carpetas, en tu perfil de usuario.
+          «Borrar escaneos recordados» los elimina todos.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "duplicados",
+    title: "Archivos duplicados",
+    body: (
+      <>
+        <ol>
+          <li>Abre la pestaña <strong>Duplicados</strong>, elige el tamaño mínimo y pulsa «Buscar duplicados».</li>
+          <li>
+            Se comparan primero los tamaños y después el contenido, así que solo se consideran duplicados los archivos
+            realmente idénticos. En unidades de red lee los archivos y puede tardar; se puede cancelar.
+          </li>
+          <li>
+            Cada grupo muestra sus copias, de la más antigua a la más nueva. «Marcar todas las copias menos la más
+            antigua» deja una de cada grupo.
+          </li>
+          <li>
+            <strong>Eliminar marcados</strong> usa la confirmación de siempre. No permite marcar todas las copias de un
+            grupo: siempre queda una.
+          </li>
+        </ol>
+        <p className="callout danger">Como en el resto de la aplicación, el borrado es definitivo.</p>
+      </>
     ),
   },
   {
@@ -271,7 +349,10 @@ const SECTIONS: Section[] = [
               ["Ctrl + A", "Seleccionar todo lo visible"],
               ["Supr", "Eliminar lo seleccionado (pide confirmación)"],
               ["Esc", "Quitar la selección, cerrar un menú o una ventana"],
-              ["Retroceso / Alt + ←", "Subir a la carpeta superior"],
+              ["Alt + ←", "Atrás (carpeta anterior del historial)"],
+              ["Alt + →", "Adelante"],
+              ["Retroceso", "Subir a la carpeta superior"],
+              ["Doble clic", "Entrar en la carpeta"],
               ["Shift + clic", "Seleccionar un rango de filas"],
               ["Ctrl + clic", "Sumar o quitar una fila de la selección"],
               ["Intro", "Escanear (en el campo de la ruta)"],
@@ -346,9 +427,11 @@ const SECTIONS: Section[] = [
 
 interface Props {
   onClose: () => void;
+  /** Sección a la que ir al abrir (por ejemplo «atajos»). */
+  section?: string;
 }
 
-export default function Manual({ onClose }: Props) {
+export default function Manual({ onClose, section }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -358,7 +441,13 @@ export default function Manual({ onClose }: Props) {
   // Al abrir, el foco pasa al título; al cerrar, vuelve a donde estaba.
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    titleRef.current?.focus();
+    const el = section ? contentRef.current?.querySelector<HTMLElement>(`#man-${section}`) : null;
+    if (el) {
+      el.scrollIntoView({ block: "start" });
+      el.focus();
+    } else {
+      titleRef.current?.focus();
+    }
     return () => prev?.focus?.();
   }, []);
 

@@ -2,16 +2,28 @@
 
 Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade una función, PATCH si solo se corrige un error.
 
-## 1.5.0
+## 1.6.0 — 2026-11-02
+
+- Nueva pestaña **Duplicados**: busca archivos idénticos (por tamaño y contenido), muestra el espacio recuperable y permite eliminar las copias sobrantes dejando siempre una.
+- Columna **Cambio**: compara cada carpeta con el escaneo anterior de la misma ruta (opcional en Ajustes, con botón para borrar el historial).
+- El mapa muestra las subcarpetas dentro de cada carpeta; un clic en una subcarpeta entra directamente.
+- Barra de capacidad de la unidad en la cabecera.
+- Botones Atrás y Adelante (Alt+←/→) y doble clic para entrar; Retroceso sigue subiendo.
+- Filtro rápido por nombre sobre la tabla.
+- Columnas redimensionables (se recuerdan).
+- Los atajos pasan del pie al botón «Atajos», que abre el manual en esa sección.
+- El manual incluye «Novedades» con la fecha de cada versión.
+
+## 1.5.0 — 2026-10-30
 
 - Créditos sin mención a la Secretaría General.
 - «Acerca de»: sección «Apoya el proyecto» con código QR, botón «Donar con PayPal» y «Copiar enlace».
 
-## 1.4.1
+## 1.4.1 — 2026-10-28
 
 - Nuevo diálogo «Acerca de» con créditos (Servicios de Informática, CIS Guillermo Miranda, Murcia, SGIIPP). También desde el pie.
 
-## 1.4.0
+## 1.4.0 — 2026-10-25
 
 - Columna «%» con barra de color según el peso (azul, ámbar desde el 15 %, rojo desde el 40 %).
 - Resaltado enlazado: la fila sobre la que está el ratón se marca en el mapa y viceversa.
@@ -19,19 +31,19 @@ Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade
 - Pantalla de inicio con tarjetas de las unidades (espacio libre y ocupación) y últimas rutas; un clic escanea.
 - Manual actualizado.
 
-## 1.3.3
+## 1.3.3 — 2026-10-24
 
 - Manual actualizado: botones Ajustes y Manual, y problema frecuente sobre el nombre del centro en los informes.
 
-## 1.3.2
+## 1.3.2 — 2026-10-21
 
 - La aplicación pasa a llamarse SGIIPP-DISKANALIZER (título, manual, informes y ejecutable `sgiipp-diskanalizer.exe`).
 
-## 1.3.1
+## 1.3.1 — 2026-10-21
 
 - El ejecutable pasa a llamarse `spaceanalizer.exe`.
 
-## 1.3.0
+## 1.3.0 — 2026-10-21
 
 - Manual de ayuda integrado y accesible (botón «Manual» o tecla F1): índice, diálogo modal con foco y teclado, Esc para cerrar.
 - Nuevo diálogo «Ajustes» con el nombre del centro y del servicio para los informes PDF (banda, cabecera, pie y autor). Se guarda por usuario.

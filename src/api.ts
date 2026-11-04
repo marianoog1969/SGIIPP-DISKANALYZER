@@ -7,6 +7,8 @@ import type {
   NodeDto,
   RefreshResult,
   ReportDefaults,
+  TmNode,
+  Delta,
   DriveSpace,
   ScanErr,
   SearchArgs,
@@ -16,7 +18,13 @@ import type {
 } from "./types";
 
 export const api = {
-  startScan: (path: string, threads: number) => invoke<void>("start_scan", { path, threads }),
+  startScan: (path: string, threads: number, remember: boolean) =>
+    invoke<void>("start_scan", { path, threads, remember }),
+  treemap: (id: number, top: number, inner: number) => invoke<TmNode>("get_treemap", { id, top, inner }),
+  deltas: (ids: number[]) => invoke<Delta[]>("get_deltas", { ids }),
+  clearHistory: () => invoke<number>("clear_history"),
+  findDuplicates: (minSize: number, threads: number) => invoke<void>("find_duplicates", { minSize, threads }),
+  cancelDuplicates: () => invoke<void>("cancel_duplicates"),
   cancelScan: () => invoke<void>("cancel_scan"),
   children: (id: number, sort: SortKey, desc: boolean, limit: number) =>
     invoke<ChildrenPage>("get_children", { id, sort, desc, limit }),

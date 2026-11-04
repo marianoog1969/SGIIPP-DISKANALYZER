@@ -4,6 +4,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { api } from "./api";
 import Treemap from "./Treemap";
 import Manual from "./Manual";
+import Duplicates from "./Duplicates";
 import donateQr from "./assets/donate-qr.png";
 
 const DONATE_URL = "https://www.paypal.me/marianoog";
@@ -20,6 +21,8 @@ import type {
   NodeDto,
   Pick,
   DriveSpace,
+  Delta,
+  TmNode,
   ReportDefaults,
   ScanDone,
   ScanErr,
@@ -32,7 +35,7 @@ import type {
 } from "./types";
 
 type Phase = "idle" | "scanning" | "done";
-type Tab = "folders" | "search" | "files" | "ext" | "errors";
+type Tab = "folders" | "search" | "dups" | "files" | "ext" | "errors";
 
 const LS_LAST = "espacio.ultima";
 const LS_RECENT = "espacio.recientes";
@@ -40,6 +43,24 @@ const LS_THREADS = "espacio.hilos";
 const LS_CENTER = "espacio.centro";
 const LS_UNIT = "espacio.servicio";
 const LS_THEME = "espacio.tema";
+const LS_REMEMBER = "espacio.recordar";
+const LS_COLS = "espacio.columnas";
+
+const DEFAULT_COLS = { size: 92, pct: 118, files: 76, date: 140, delta: 96 };
+type ColKey = keyof typeof DEFAULT_COLS;
+
+function loadCols(): typeof DEFAULT_COLS {
+  try {
+    const v = JSON.parse(localStorage.getItem(LS_COLS) ?? "{}");
+    const out = { ...DEFAULT_COLS };
+    (Object.keys(out) as ColKey[]).forEach((k) => {
+      if (typeof v[k] === "number" && v[k] >= 50 && v[k] <= 500) out[k] = v[k];
+    });
+    return out;
+  } catch {
+    return { ...DEFAULT_COLS };
+  }
+}
 
 type Theme = "auto" | "light" | "dark";
 const THEME_NEXT: Record<Theme, Theme> = { auto: "light", light: "dark", dark: "auto" };
@@ -142,6 +163,17 @@ export default function App() {
   const [crumbs, setCrumbs] = useState<NodeDto[]>([]);
   const [page, setPage] = useState<ChildrenPage | null>(null);
   const [tm, setTm] = useState<ChildrenPage | null>(null);
+  const [tmTree, setTmTree] = useState<TmNode | null>(null);
+  const backRef = useRef<number[]>([]);
+  const fwdRef = useRef<number[]>([]);
+  const [navFlags, setNavFlags] = useState({ back: false, fwd: false });
+  const [nameFilter, setNameFilter] = useState("");
+  const [cols, setCols] = useState(loadCols);
+  const [cap, setCap] = useState<DriveSpace | null>(null);
+  const [deltas, setDeltas] = useState<Map<number, Delta>>(new Map());
+  const [remember, setRemember] = useState(() => loadText(LS_REMEMBER) !== "0");
+  const [manualSection, setManualSection] = useState<string | undefined>(undefined);
+  const [scanSeq, setScanSeq] = useState(0);
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "size", desc: true });
   const [checked, setChecked] = useState<Map<number, Pick>>(new Map());
   const [confirmDel, setConfirmDel] = useState(false);
@@ -263,11 +295,12 @@ export default function App() {
   useEffect(() => {
     if (phase !== "done") return;
     let alive = true;
-    Promise.all([api.ancestors(cur), api.children(cur, "size", true, 250)])
-      .then(([a, t]) => {
+    Promise.all([api.ancestors(cur), api.children(cur, "size", true, 250), api.treemap(cur, 250, 14).catch(() => null)])
+      .then(([a, t, tr]) => {
         if (!alive) return;
         setCrumbs(a);
         setTm(t);
+        setTmTree(tr);
         setChecked(new Map());
       })
       .catch((e) => alive && fetchFail(e));
@@ -275,6 +308,35 @@ export default function App() {
       alive = false;
     };
   }, [phase, cur, reload]);
+
+  // Capacidad de la unidad donde está lo escaneado
+  useEffect(() => {
+    if (phase !== "done" || !done) return;
+    let alive = true;
+    api.driveSpace(done.root).then((c) => alive && setCap(c)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [phase, done?.root]);
+
+  useEffect(() => setNameFilter(""), [cur]);
+
+  // Cambio respecto al escaneo anterior de esta misma ruta
+  useEffect(() => {
+    if (phase !== "done" || !done?.previous || !page) {
+      setDeltas(new Map());
+      return;
+    }
+    let alive = true;
+    const ids = page.items.filter((n) => n.isDir).map((n) => n.id);
+    api
+      .deltas(ids)
+      .then((ds) => alive && setDeltas(new Map(ids.map((id, i) => [id, ds[i]]))))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [phase, done?.previous, page]);
 
   // Tabla de la carpeta actual (con el orden elegido)
   useEffect(() => {
@@ -342,9 +404,32 @@ export default function App() {
     setTyped("");
   }, [confirmDel]);
 
-  const goUp = useCallback(() => {
-    if (crumbs.length > 1) setCur(crumbs[crumbs.length - 2].id);
-  }, [crumbs]);
+  const syncNav = () => setNavFlags({ back: backRef.current.length > 0, fwd: fwdRef.current.length > 0 });
+  /** Ir a una carpeta recordando de dónde venimos (para Atrás / Adelante). */
+  const navTo = (id: number) => {
+    if (id === cur) return;
+    backRef.current.push(cur);
+    fwdRef.current = [];
+    setCur(id);
+    syncNav();
+  };
+  const goBack = () => {
+    const id = backRef.current.pop();
+    if (id === undefined) return;
+    fwdRef.current.push(cur);
+    setCur(id);
+    syncNav();
+  };
+  const goFwd = () => {
+    const id = fwdRef.current.pop();
+    if (id === undefined) return;
+    backRef.current.push(cur);
+    setCur(id);
+    syncNav();
+  };
+  const goUp = () => {
+    if (crumbs.length > 1) navTo(crumbs[crumbs.length - 2].id);
+  };
 
   // Atajos de teclado (el manejador siempre ve el estado más reciente).
   const keyRef = useRef<(e: KeyboardEvent) => void>(() => {});
@@ -365,6 +450,7 @@ export default function App() {
     }
     if (e.key === "F1") {
       e.preventDefault();
+      setManualSection(undefined);
       setShowManual(true);
       return;
     }
@@ -395,7 +481,13 @@ export default function App() {
     } else if (ctrl && e.key.toLowerCase() === "a" && canSelect) {
       e.preventDefault();
       toggleAll(true);
-    } else if (tab === "folders" && (e.key === "Backspace" || (e.altKey && e.key === "ArrowLeft"))) {
+    } else if (tab === "folders" && e.altKey && e.key === "ArrowLeft") {
+      e.preventDefault();
+      goBack();
+    } else if (tab === "folders" && e.altKey && e.key === "ArrowRight") {
+      e.preventDefault();
+      goFwd();
+    } else if (tab === "folders" && e.key === "Backspace") {
       e.preventDefault();
       goUp();
     }
@@ -413,6 +505,13 @@ export default function App() {
     setError(null);
     setNotice(null);
     liveIds.current = new Map();
+    backRef.current = [];
+    fwdRef.current = [];
+    syncNav();
+    setCap(null);
+    setDeltas(new Map());
+    setTmTree(null);
+    setScanSeq((n) => n + 1);
     setProgress(null);
     setDone(null);
     setPage(null);
@@ -426,7 +525,7 @@ export default function App() {
     setTab("folders");
     setPhase("scanning");
     try {
-      await api.startScan(p, threads);
+      await api.startScan(p, threads, remember);
       const next = [p, ...recent.filter((r) => r !== p)].slice(0, 8);
       setRecent(next);
       localStorage.setItem(LS_RECENT, JSON.stringify(next));
@@ -476,7 +575,12 @@ export default function App() {
   const selItems = useMemo(() => [...checked.values()], [checked]);
   const selSize = selItems.reduce((t, n) => t + n.size, 0);
   const selFolders = selItems.filter((n) => n.isDir).length;
-  const visible: (NodeDto | SearchItem)[] = tab === "search" ? (sres?.items ?? []) : tab === "folders" ? (page?.items ?? []) : [];
+  const shown = useMemo(() => {
+    const q = nameFilter.trim().toLowerCase();
+    const items = page?.items ?? [];
+    return q ? items.filter((n) => n.name.toLowerCase().includes(q)) : items;
+  }, [page, nameFilter]);
+  const visible: (NodeDto | SearchItem)[] = tab === "search" ? (sres?.items ?? []) : tab === "folders" ? shown : [];
   const allChecked = visible.length > 0 && visible.every((n) => checked.has(n.id));
   function toggleAll(forceOn = false) {
     setChecked(allChecked && !forceOn ? new Map() : new Map(visible.map((n) => [n.id, pickOf(n)])));
@@ -598,10 +702,10 @@ export default function App() {
     const canSelect = tab === "folders" || tab === "search";
     const many = checked.has(p.id) && checked.size > 1;
     const list: (MenuItem | null | false)[] = [
-      p.isDir && { label: "Abrir carpeta", hint: "clic", onClick: () => { setCur(p.id); setTab("folders"); } },
+      p.isDir && { label: "Abrir carpeta", hint: "clic", onClick: () => { navTo(p.id); setTab("folders"); } },
       !p.isDir && p.parent !== undefined && {
         label: "Ir a la carpeta que lo contiene",
-        onClick: () => { setCur(p.parent as number); setTab("folders"); },
+        onClick: () => { navTo(p.parent as number); setTab("folders"); },
       },
       { label: "Mostrar en el Explorador", onClick: () => reveal(p.id) },
       { label: "Copiar ruta", onClick: () => copyPath(p.id) },
@@ -692,15 +796,83 @@ export default function App() {
   const curNode = crumbs[crumbs.length - 1];
   const curSize = curNode?.size ?? 0;
 
-  const sortTh = (key: SortKey, label: string, cls = "") => (
+  const saveCols = (c: typeof DEFAULT_COLS) => {
+    try {
+      localStorage.setItem(LS_COLS, JSON.stringify(c));
+    } catch {
+      /* sin almacenamiento */
+    }
+  };
+  /** Arrastrar el borde derecho de una cabecera cambia el ancho de esa columna. */
+  const startResize = (col: ColKey, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const x0 = e.clientX;
+    const w0 = cols[col];
+    let last = w0;
+    const move = (ev: MouseEvent) => {
+      last = Math.max(50, Math.min(500, w0 + ev.clientX - x0));
+      setCols((c) => ({ ...c, [col]: last }));
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      setCols((c) => {
+        saveCols(c);
+        return c;
+      });
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+  const resetCol = (col: ColKey) =>
+    setCols((c) => {
+      const n = { ...c, [col]: DEFAULT_COLS[col] };
+      saveCols(n);
+      return n;
+    });
+  const handle = (col: ColKey) => (
+    <span
+      className="rs"
+      role="separator"
+      aria-orientation="vertical"
+      title="Arrastra para cambiar el ancho (doble clic: restablecer)"
+      onMouseDown={(e) => startResize(col, e)}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        resetCol(col);
+      }}
+    />
+  );
+
+  const sortTh = (key: SortKey, label: string, cls = "", col?: ColKey) => (
     <th
       className={cls + " sortable"}
+      style={col ? { width: cols[col] } : undefined}
       onClick={() => setSort((s) => (s.key === key ? { key, desc: !s.desc } : { key, desc: key !== "name" }))}
     >
       {label}
       {sort.key === key && <span className="arrow">{sort.desc ? "▼" : "▲"}</span>}
+      {col && handle(col)}
     </th>
   );
+
+  const hasDelta = !!done?.previous;
+  const fmtDelta = (n: NodeDto) => {
+    const d = deltas.get(n.id);
+    if (!n.isDir || !d) return null;
+    if (d.isNew) return <span className="dl new">nuevo</span>;
+    if (d.prev === null) return null;
+    const diff = n.size - d.prev;
+    if (Math.abs(diff) < 1024) return <span className="dl same">=</span>;
+    return (
+      <span className={"dl " + (diff > 0 ? "up" : "down")} title={`Antes: ${fmtBytes(d.prev)}`}>
+        {diff > 0 ? "+" : "−"}
+        {fmtBytes(Math.abs(diff))}
+      </span>
+    );
+  };
 
   const rowActions = (id: number) => (
     <td className="act">
@@ -774,7 +946,7 @@ export default function App() {
             <button className="tool" onClick={() => setShowAbout(true)} title="Créditos y versión">
               <Icon.help /> Acerca de
             </button>
-            <button className="tool" onClick={() => setShowManual(true)} title="Abrir el manual (F1)">
+            <button className="tool" onClick={() => { setManualSection(undefined); setShowManual(true); }} title="Abrir el manual (F1)">
               <Icon.help /> Manual <kbd>F1</kbd>
             </button>
           </span>
@@ -950,6 +1122,23 @@ export default function App() {
             <Stat label="archivos" value={fmtInt(done.files)} />
             <Stat label="carpetas" value={fmtInt(done.dirs)} />
             <Stat label="duración" value={fmtDur(done.elapsedMs)} />
+            {cap && (
+              <div
+                className="cap"
+                title={`Unidad: ${fmtBytes(cap.total - cap.free)} usados de ${fmtBytes(cap.total)}. Lo escaneado ocupa ${fmtBytes(done.size)}.`}
+              >
+                <div className="pbar" aria-hidden="true">
+                  <i
+                    className={barTone(pct(cap.total - cap.free, cap.total) >= 90 ? 40 : pct(cap.total - cap.free, cap.total) >= 75 ? 15 : 0)}
+                    style={{ width: `${pct(cap.total - cap.free, cap.total)}%` }}
+                  />
+                </div>
+                <span>
+                  <b>{fmtBytes(cap.free)}</b> libres de {fmtBytes(cap.total)} ({fmtPct(pct(cap.free, cap.total))})
+                </span>
+              </div>
+            )}
+            {done.previous && <span className="tag info">Cambios desde el {fmtDate(done.previous.time)}</span>}
             {done.errors > 0 && (
               <button className="stat warn" onClick={() => setTab("errors")}>
                 <b>{fmtInt(done.errors)}</b> sin acceso
@@ -963,6 +1152,7 @@ export default function App() {
               [
                 ["folders", "Carpetas"],
                 ["search", "Buscar"],
+                ["dups", "Duplicados"],
                 ["files", "Archivos más grandes"],
                 ["ext", "Por extensión"],
                 ["errors", `Errores${done.errors ? ` (${fmtInt(done.errors)})` : ""}`],
@@ -978,6 +1168,12 @@ export default function App() {
             <div className="split">
               <section className="panel">
                 <div className="crumbs">
+                  <button className="icon" title="Atrás (Alt+←)" disabled={!navFlags.back} onClick={goBack}>
+                    <Icon.left />
+                  </button>
+                  <button className="icon" title="Adelante (Alt+→)" disabled={!navFlags.fwd} onClick={goFwd}>
+                    <Icon.right />
+                  </button>
                   <button className="icon" title="Subir (Retroceso)" disabled={crumbs.length < 2} onClick={goUp}>
                     <Icon.up />
                   </button>
@@ -996,7 +1192,7 @@ export default function App() {
                       {i > 0 && <em>›</em>}
                       <button
                         className={i === crumbs.length - 1 ? "here" : ""}
-                        onClick={() => setCur(c.id)}
+                        onClick={() => navTo(c.id)}
                         title={c.name}
                       >
                         {i === 0 ? shortenPath(c.name, 40) : c.name}
@@ -1012,6 +1208,28 @@ export default function App() {
                     <Icon.export /> Exportar…
                   </button>
                 </div>
+                <div className="qf-row">
+                  <Icon.search />
+                  <input
+                    className="qf"
+                    value={nameFilter}
+                    placeholder="Filtrar por nombre en esta carpeta…"
+                    aria-label="Filtrar por nombre en esta carpeta"
+                    spellCheck={false}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape" && nameFilter) {
+                        e.stopPropagation();
+                        setNameFilter("");
+                      }
+                    }}
+                  />
+                  {nameFilter && (
+                    <span className="muted">
+                      {fmtInt(shown.length)} de {fmtInt(page?.items.length ?? 0)}
+                    </span>
+                  )}
+                </div>
                 {selBar}
                 <div className="table-scroll">
                   <table>
@@ -1026,21 +1244,33 @@ export default function App() {
                           />
                         </th>
                         {sortTh("name", "Nombre", "c-name")}
-                        {sortTh("size", "Tamaño", "c-size")}
-                        <th className="c-pct">%</th>
-                        {sortTh("files", "Archivos", "num")}
-                        {sortTh("mtime", "Modificado", "date")}
+                        {sortTh("size", "Tamaño", "c-size", "size")}
+                        <th className="c-pct" style={{ width: cols.pct }}>
+                          %{handle("pct")}
+                        </th>
+                        {hasDelta && (
+                          <th
+                            className="c-delta"
+                            style={{ width: cols.delta }}
+                            title={`Cambio de tamaño respecto al escaneo del ${fmtDate(done!.previous!.time)}`}
+                          >
+                            Cambio{handle("delta")}
+                          </th>
+                        )}
+                        {sortTh("files", "Archivos", "num", "files")}
+                        {sortTh("mtime", "Modificado", "date", "date")}
                         <th className="act" />
                       </tr>
                     </thead>
                     <tbody>
-                      {page?.items.map((n) => {
+                      {shown.map((n) => {
                         const p = pct(n.size, curSize);
                         return (
                           <tr
                             key={n.id}
                             className={(checked.has(n.id) ? "sel" : "") + (hoverId === n.id ? " hl" : "")}
                             onClick={(e) => onRowClick(e, n)}
+                            onDoubleClick={() => n.isDir && navTo(n.id)}
                             onMouseEnter={() => setHoverId(n.id)}
                             onMouseLeave={() => setHoverId(null)}
                             onMouseDown={(e) => e.shiftKey && e.preventDefault()}
@@ -1055,7 +1285,7 @@ export default function App() {
                                   {n.isDir ? <Icon.folder /> : <Icon.file />}
                                 </span>
                                 {n.isDir ? (
-                                  <button className="nm link" title={n.name} onClick={() => setCur(n.id)}>
+                                  <button className="nm link" title={n.name} onClick={() => navTo(n.id)}>
                                     {n.name}
                                   </button>
                                 ) : (
@@ -1074,15 +1304,16 @@ export default function App() {
                               </div>
                               <span>{fmtPct(p)}</span>
                             </td>
+                            {hasDelta && <td className="c-delta">{fmtDelta(n)}</td>}
                             <td className="num">{n.isDir ? fmtInt(n.files) : ""}</td>
                             <td className="date">{fmtDate(n.mtime)}</td>
                             {rowActions(n.id)}
                           </tr>
                         );
                       })}
-                      {page && page.restCount > 0 && (
+                      {page && page.restCount > 0 && !nameFilter && (
                         <tr className="rest-row">
-                          <td colSpan={7}>
+                          <td colSpan={hasDelta ? 8 : 7}>
                             … y {fmtInt(page.restCount)} elementos más ({fmtBytes(page.restSize)})
                           </td>
                         </tr>
@@ -1090,6 +1321,9 @@ export default function App() {
                     </tbody>
                   </table>
                   {page && page.total === 0 && <div className="empty">Esta carpeta está vacía</div>}
+                  {page && page.total > 0 && shown.length === 0 && (
+                    <div className="empty">Ningún nombre coincide con «{nameFilter}»</div>
+                  )}
                 </div>
               </section>
               <section className="panel map">
@@ -1098,10 +1332,11 @@ export default function App() {
                     items={tm.items}
                     restSize={tm.restSize}
                     restCount={tm.restCount}
+                    tree={tmTree}
                     basePath={basePath}
                     highlightId={hoverId}
                     onHover={setHoverId}
-                    onOpen={(n) => setCur(n.id)}
+                    onOpen={(n) => navTo(n.id)}
                     onContext={(n, x, y) => setCtx({ x, y, p: pickOf(n) })}
                   />
                 )}
@@ -1234,7 +1469,7 @@ export default function App() {
                                 className="sub link"
                                 title="Ir a la carpeta que lo contiene"
                                 onClick={() => {
-                                  setCur(n.parent);
+                                  navTo(n.parent);
                                   setTab("folders");
                                 }}
                               >
@@ -1257,6 +1492,20 @@ export default function App() {
                 {sres && sres.items.length === 0 && <div className="empty">Nada coincide con esos filtros</div>}
               </div>
             </section>
+          )}
+
+          {done && (
+            <div hidden={tab !== "dups"} key={scanSeq}>
+              <Duplicates
+                threads={threads}
+                reload={reload}
+                onError={(m) => setError(m)}
+                onDelete={(picks) => {
+                  setChecked(new Map(picks.map((p) => [p.id, p])));
+                  setConfirmDel(true);
+                }}
+              />
+            </div>
           )}
 
           {tab === "files" && (
@@ -1290,7 +1539,7 @@ export default function App() {
                                 className="sub link"
                                 title="Ir a esta carpeta"
                                 onClick={() => {
-                                  setCur(f.parent);
+                                  navTo(f.parent);
                                   setTab("folders");
                                 }}
                               >
@@ -1477,7 +1726,7 @@ export default function App() {
         </div>
       )}
 
-      {showManual && <Manual onClose={() => setShowManual(false)} />}
+      {showManual && <Manual section={manualSection} onClose={() => setShowManual(false)} />}
 
       {showAbout && (
         <div className="modal-back" onMouseDown={() => setShowAbout(false)}>
@@ -1571,6 +1820,33 @@ export default function App() {
               onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && saveSettings()}
             />
+            <label className="check" htmlFor="set-remember">
+              <input
+                id="set-remember"
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => {
+                  setRemember(e.target.checked);
+                  try {
+                    localStorage.setItem(LS_REMEMBER, e.target.checked ? "1" : "0");
+                  } catch {
+                    /* sin almacenamiento */
+                  }
+                }}
+              />
+              Recordar el tamaño de las carpetas de cada escaneo para ver el cambio en el siguiente
+            </label>
+            <button
+              className="clear-history"
+              onClick={() =>
+                api
+                  .clearHistory()
+                  .then((n) => flash(n ? `Borrados ${n} escaneos recordados` : "No había escaneos recordados"))
+                  .catch((e) => setError(String(e)))
+              }
+            >
+              Borrar escaneos recordados
+            </button>
             {defaults.fromFile && (
               <p className="muted small">
                 Los valores por defecto proceden del archivo <code>espacio.ini</code> junto al programa.
@@ -1616,11 +1892,18 @@ export default function App() {
           </button>{" "}
           · Servicios de Informática · CIS Guillermo Miranda · Murcia
         </span>
-        {phase === "done" && (
-          <span className="keys">
-            <kbd>F1</kbd> manual · <kbd>F5</kbd> actualizar · <kbd>Ctrl</kbd>+<kbd>F</kbd> buscar · <kbd>Supr</kbd> eliminar · <kbd>Shift</kbd>/<kbd>Ctrl</kbd>+clic: varios · clic derecho: más opciones
-          </span>
-        )}
+        <span className="keys">
+          <button
+            className="link-btn"
+            onClick={() => {
+              setManualSection("atajos");
+              setShowManual(true);
+            }}
+            title="Ver los atajos de teclado"
+          >
+            <Icon.help /> Atajos <kbd>F1</kbd>
+          </button>
+        </span>
       </footer>
 
       {toast && <div className="toast">{toast}</div>}

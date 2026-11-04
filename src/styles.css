@@ -1551,3 +1551,325 @@ footer > span:first-child {
   gap: 8px;
   flex-wrap: wrap;
 }
+.release {
+  margin: 14px 0 4px;
+  padding-top: 0;
+}
+.manual-content .release h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 2px;
+  font-size: 14.5px;
+}
+.release time {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.release .badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.release ul {
+  margin: 4px 0 0;
+}
+
+/* mapa con subcarpetas */
+.cell.nest {
+  overflow: hidden;
+}
+.cell.nest .cl-name {
+  height: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.cell.nest .cl-name em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 11px;
+  opacity: 0.8;
+}
+.nested {
+  position: absolute;
+}
+.sub {
+  position: absolute;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  padding: 1px 3px;
+  color: #fff;
+  filter: brightness(0.92);
+}
+.sub:hover {
+  filter: brightness(1.25);
+  z-index: 2;
+}
+.sub.dir {
+  cursor: pointer;
+}
+.sub.rest {
+  background: var(--rest);
+  filter: none;
+}
+.sub-name {
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ───── 1.6: capacidad, filtro, columnas, cambio, duplicados ───── */
+.cap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  font-size: 12.5px;
+}
+.cap .pbar {
+  height: 8px;
+}
+.cap span {
+  color: var(--muted);
+}
+.cap b {
+  color: var(--text);
+}
+.tag.info {
+  background: var(--sel);
+  color: var(--accent);
+}
+.qf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+.qf-row svg {
+  flex: none;
+}
+.qf {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 4px 2px;
+  min-width: 0;
+}
+.qf:focus {
+  outline: none;
+}
+.qf-row:focus-within {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+thead th {
+  position: sticky;
+}
+th .rs {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+}
+th .rs::after {
+  content: "";
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  right: 3px;
+  width: 1px;
+  background: var(--line);
+}
+th .rs:hover::after {
+  background: var(--accent);
+  width: 2px;
+}
+th.c-delta,
+td.c-delta {
+  text-align: right;
+}
+.dl {
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+}
+.dl.up {
+  color: var(--danger);
+}
+.dl.down {
+  color: #2f9e5b;
+}
+.dl.new {
+  color: var(--warn);
+  font-weight: 600;
+}
+.dl.same {
+  color: var(--muted);
+}
+:root[data-theme="dark"] .dl.down {
+  color: #6bd49a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dl.down {
+    color: #6bd49a;
+  }
+}
+tr:hover .dl {
+  font-weight: 600;
+}
+
+.modal.settings .check {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-weight: 400;
+  margin: 14px 0 6px;
+}
+.modal.settings .check input {
+  width: auto;
+  margin-top: 3px;
+}
+.clear-history {
+  margin-bottom: 4px;
+}
+
+footer .keys .link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+footer .keys .link-btn:hover {
+  color: var(--accent);
+}
+
+/* duplicados */
+.dups {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dup-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.dup-bar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dup-note {
+  font-size: 12px;
+  flex: 1;
+  min-width: 240px;
+}
+.dup-progress {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dup-cur {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-summary {
+  padding: 10px 14px;
+}
+.dup-actions {
+  position: static;
+  flex-wrap: wrap;
+}
+.warn-text {
+  color: var(--warn);
+  font-size: 12.5px;
+}
+.dup-list {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.dup-group {
+  border-bottom: 1px solid var(--line);
+}
+.dup-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+}
+.dup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.dup-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dup-wasted {
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.dup-files {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 8px 38px;
+}
+.dup-files li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.dup-files li.sel {
+  background: var(--sel);
+}
+.dup-files label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.dup-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+}
+.dup-date {
+  white-space: nowrap;
+  font-size: 12px;
+}

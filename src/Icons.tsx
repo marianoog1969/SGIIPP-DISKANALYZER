@@ -102,4 +102,14 @@ export const Icon = {
       <path d="M8 2.2v11.6A5.8 5.8 0 0 0 8 2.2z" fill="currentColor" />
     </svg>
   ),
+  left: ({ className }: P) => (
+    <svg {...base} className={className}>
+      <path d="M9.5 3.5 5 8l4.5 4.5" />
+    </svg>
+  ),
+  right: ({ className }: P) => (
+    <svg {...base} className={className}>
+      <path d="M6.5 3.5 11 8l-4.5 4.5" />
+    </svg>
+  ),
 };

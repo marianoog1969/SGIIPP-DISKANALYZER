@@ -82,6 +82,8 @@ export interface ScanDone {
   errors: number;
   elapsedMs: number;
   cancelled: boolean;
+  /** Escaneo anterior de la misma ruta, si lo había. */
+  previous: { time: number; size: number } | null;
 }
 
 export interface TopFile {
@@ -159,4 +161,53 @@ export interface ReportDefaults {
   center: string;
   unit: string;
   fromFile: boolean;
+}
+
+/** Nodo del mapa con sus hijos más grandes dentro. */
+export interface TmNode {
+  id: number;
+  name: string;
+  isDir: boolean;
+  size: number;
+  files: number;
+  mtime: number;
+  children: TmNode[];
+  restSize: number;
+  restCount: number;
+}
+
+export interface Delta {
+  prev: number | null;
+  isNew: boolean;
+}
+
+export interface DupProgress {
+  phase: "tamaños" | "inicio" | "contenido";
+  filesDone: number;
+  filesTotal: number;
+  bytesDone: number;
+  bytesTotal: number;
+  current: string;
+}
+
+export interface DupFile {
+  id: number;
+  name: string;
+  path: string;
+  mtime: number;
+}
+
+export interface DupGroup {
+  size: number;
+  files: DupFile[];
+}
+
+export interface DupDone {
+  groups: DupGroup[];
+  totalGroups: number;
+  wasted: number;
+  errors: number;
+  cancelled: boolean;
+  candidates: number;
+  minSize: number;
 }

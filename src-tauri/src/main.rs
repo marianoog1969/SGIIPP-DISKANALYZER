@@ -2,8 +2,10 @@
 
 mod delete;
 mod drives;
+mod duplicates;
 mod report;
 mod scan;
+mod snapshot;
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::collections::HashSet;
@@ -25,6 +27,10 @@ struct AppState {
     /// Borrado o actualización de carpeta en curso.
     busy: AtomicBool,
     cancel_delete: Arc<AtomicBool>,
+    /// Instantánea del escaneo anterior de la misma ruta (para la columna de cambios).
+    prev: Mutex<Option<snapshot::Snapshot>>,
+    dup_cancel: Arc<AtomicBool>,
+    dup_running: AtomicBool,
 }
 
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -134,6 +140,15 @@ struct DoneDto {
     errors: u64,
     elapsed_ms: u64,
     cancelled: bool,
+    /// Si había un escaneo anterior de esta ruta: cuándo se hizo y cuánto ocupaba.
+    previous: Option<PrevDto>,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct PrevDto {
+    time: i64,
+    size: u64,
 }
 
 impl DoneDto {
@@ -147,6 +162,7 @@ impl DoneDto {
             errors: t.error_count,
             elapsed_ms: t.elapsed.as_millis() as u64,
             cancelled: t.cancelled,
+            previous: None,
         }
     }
 }
@@ -264,6 +280,7 @@ fn start_scan(
     state: State<'_, AppState>,
     path: String,
     threads: usize,
+    remember: Option<bool>,
 ) -> Result<(), String> {
     if state.scanning.swap(true, Ordering::SeqCst) {
         return Err("Ya hay un escaneo en curso.".into());
@@ -284,7 +301,15 @@ fn start_scan(
 
         match outcome {
             Ok(Ok(tree)) => {
-                let done = DoneDto::new(&tree);
+                let mut done = DoneDto::new(&tree);
+                // Escaneo anterior de la misma ruta (si lo hay) y, si procede, guardar este.
+                let dir = snapshot::data_dir();
+                let prev = snapshot::load(&dir, &done.root);
+                done.previous = prev.as_ref().map(|p| PrevDto { time: p.time, size: p.root_size });
+                if !tree.cancelled && remember.unwrap_or(true) {
+                    let _ = snapshot::save(&dir, &snapshot::build(&tree, now_secs()));
+                }
+                *lock(&state.prev) = prev;
                 *lock(&state.tree) = Some(tree);
                 state.scanning.store(false, Ordering::SeqCst);
                 let _ = app.emit("scan-done", done);
@@ -630,6 +655,209 @@ async fn export_report(
     })
 }
 
+// ───────────────────── Comparación con el escaneo anterior ─────────────────────
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DeltaDto {
+    prev: Option<u64>,
+    is_new: bool,
+}
+
+#[tauri::command]
+async fn get_deltas(state: State<'_, AppState>, ids: Vec<u32>) -> Result<Vec<DeltaDto>, String> {
+    let prev = lock(&state.prev);
+    with_tree(&state, |t| {
+        Ok(ids
+            .iter()
+            .map(|&id| match (prev.as_ref(), t.nodes.get(id as usize)) {
+                (Some(p), Some(_)) => {
+                    let d = snapshot::compare(p, t, id);
+                    DeltaDto { prev: d.prev, is_new: d.is_new }
+                }
+                _ => DeltaDto { prev: None, is_new: false },
+            })
+            .collect())
+    })
+}
+
+/// Borra los escaneos recordados. Devuelve cuántos había.
+#[tauri::command]
+fn clear_history(state: State<'_, AppState>) -> usize {
+    *lock(&state.prev) = None;
+    snapshot::clear(&snapshot::data_dir())
+}
+
+// ───────────────────────────── Mapa con subcarpetas ─────────────────────────────
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TmNodeDto {
+    id: u32,
+    name: String,
+    is_dir: bool,
+    size: u64,
+    files: u64,
+    mtime: i64,
+    children: Vec<TmNodeDto>,
+    rest_size: u64,
+    rest_count: usize,
+}
+
+fn tm_build(t: &Tree, id: u32, levels: &[usize]) -> TmNodeDto {
+    let n = &t.nodes[id as usize];
+    let mut out = TmNodeDto {
+        id,
+        name: n.name.to_string(),
+        is_dir: n.is_dir,
+        size: n.size,
+        files: n.files,
+        mtime: n.mtime,
+        children: Vec::new(),
+        rest_size: 0,
+        rest_count: 0,
+    };
+    if let (true, Some((&limit, deeper))) = (n.is_dir, levels.split_first()) {
+        if let Some(page) = t.children_page(id, SortKey::Size, true, limit) {
+            out.children = page
+                .ids
+                .iter()
+                .filter(|&&c| t.nodes[c as usize].size > 0)
+                .map(|&c| tm_build(t, c, deeper))
+                .collect();
+            out.rest_count = page.rest_count;
+            out.rest_size = page.rest_size;
+        }
+    }
+    out
+}
+
+/// Carpeta con sus hijos y, dentro de cada subcarpeta, sus hijos más grandes.
+#[tauri::command]
+async fn get_treemap(state: State<'_, AppState>, id: u32, top: usize, inner: usize) -> Result<TmNodeDto, String> {
+    with_tree(&state, |t| {
+        if t.nodes.get(id as usize).map_or(true, |n| n.removed) {
+            return Err("Carpeta no encontrada.".to_string());
+        }
+        Ok(tm_build(t, id, &[top.clamp(1, 400), inner.clamp(0, 40)]))
+    })
+}
+
+// ───────────────────────────── Duplicados ─────────────────────────────
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct DupProgressDto {
+    phase: String,
+    files_done: u64,
+    files_total: u64,
+    bytes_done: u64,
+    bytes_total: u64,
+    current: String,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct DupFileDto {
+    id: u32,
+    name: String,
+    path: String,
+    mtime: i64,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct DupGroupDto {
+    size: u64,
+    files: Vec<DupFileDto>,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct DupDoneDto {
+    groups: Vec<DupGroupDto>,
+    total_groups: usize,
+    wasted: u64,
+    errors: u64,
+    cancelled: bool,
+    candidates: u64,
+    min_size: u64,
+}
+
+#[tauri::command]
+fn find_duplicates(app: AppHandle, state: State<'_, AppState>, min_size: u64, threads: usize) -> Result<(), String> {
+    if state.scanning.load(Ordering::SeqCst) || state.busy.load(Ordering::SeqCst) {
+        return Err("Hay otra operación en curso.".into());
+    }
+    if state.dup_running.swap(true, Ordering::SeqCst) {
+        return Err("Ya se están buscando duplicados.".into());
+    }
+    state.dup_cancel.store(false, Ordering::SeqCst);
+    std::thread::spawn(move || {
+        let state = app.state::<AppState>();
+        let cancel = state.dup_cancel.clone();
+        let emitter = app.clone();
+        let res = catch_unwind(AssertUnwindSafe(|| {
+            let guard = lock(&state.tree);
+            let tree = guard.as_ref()?;
+            // El árbol se mantiene bloqueado mientras se leen los archivos: no se puede borrar ni escanear a la vez.
+            let r = duplicates::find(tree, min_size, threads, &cancel, |p| {
+                let _ = emitter.emit(
+                    "dup-progress",
+                    DupProgressDto {
+                        phase: p.phase.to_string(),
+                        files_done: p.files_done,
+                        files_total: p.files_total,
+                        bytes_done: p.bytes_done,
+                        bytes_total: p.bytes_total,
+                        current: p.current.clone(),
+                    },
+                );
+            });
+            Some(DupDoneDto {
+                groups: r
+                    .groups
+                    .iter()
+                    .map(|g| DupGroupDto {
+                        size: g.size,
+                        files: g
+                            .ids
+                            .iter()
+                            .map(|&i| DupFileDto {
+                                id: i,
+                                name: tree.nodes[i as usize].name.to_string(),
+                                path: tree.full_path(i).to_string_lossy().into_owned(),
+                                mtime: tree.nodes[i as usize].mtime,
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+                total_groups: r.total_groups,
+                wasted: r.wasted,
+                errors: r.errors,
+                cancelled: r.cancelled,
+                candidates: r.candidates,
+                min_size,
+            })
+        }));
+        state.dup_running.store(false, Ordering::SeqCst);
+        match res {
+            Ok(Some(d)) => {
+                let _ = app.emit("dup-done", d);
+            }
+            _ => {
+                let _ = app.emit("dup-error", "No se pudo completar la búsqueda de duplicados.".to_string());
+            }
+        }
+    });
+    Ok(())
+}
+
+#[tauri::command]
+fn cancel_duplicates(state: State<'_, AppState>) {
+    state.dup_cancel.store(true, Ordering::SeqCst);
+}
+
 /// Muestra un archivo cualquiera (p. ej. un informe recién guardado) en el Explorador.
 #[tauri::command]
 fn reveal_path(path: String) -> Result<(), String> {
@@ -960,6 +1188,11 @@ fn main() {
             get_report_defaults,
             reveal_path,
             open_donate,
+            get_deltas,
+            clear_history,
+            get_treemap,
+            find_duplicates,
+            cancel_duplicates,
             get_errors,
             reveal,
             list_drives,
