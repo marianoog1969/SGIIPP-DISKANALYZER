@@ -732,8 +732,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "sgiipp-diskanalizer"
-version = "1.6.2"
+name = "sgiipp-diskanalyzer"
+version = "1.6.3"
 dependencies = [
  "serde",
  "tauri",

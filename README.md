@@ -1,4 +1,4 @@
-# SGIIPP-DISKANALIZER
+# SGIIPP-DISKANALYZER
 
 Analizador de espacio en disco (estilo TreeSize) para unidades locales y de red.
 Tauri 2 + Rust + React/TypeScript.
@@ -15,7 +15,7 @@ npm run tauri dev                          # desarrollo
 npm run tauri build -- --no-bundle         # build de producción sin instalador
 ```
 
-El ejecutable queda en `src-tauri\target\release\sgiipp-diskanalizer.exe`.
+El ejecutable queda en `src-tauri\target\release\sgiipp-diskanalyzer.exe`.
 
 ## Versiones
 

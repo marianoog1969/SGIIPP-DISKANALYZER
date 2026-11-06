@@ -2,6 +2,11 @@
 
 Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade una función, PATCH si solo se corrige un error.
 
+## 1.6.3 — 2026-11-06
+
+- Corregido el nombre: «DISKANALYZER» (con Y), en título, manual, informes, carpeta de datos y ejecutable `sgiipp-diskanalyzer.exe`.
+- Los escaneos recordados (Cambio) se guardan ahora en `%APPDATA%\SGIIPP-DISKANALYZER`; los de la carpeta anterior no se reutilizan.
+
 ## 1.6.2 — 2026-11-06
 
 - Corregido: en «Buscar» y «Archivos más grandes» la ruta de cada archivo se dibujaba como una caja encima del nombre (error de 1.6.1 con una clase de estilo repetida).
@@ -46,11 +51,11 @@ Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade
 
 ## 1.3.2 — 2026-10-21
 
-- La aplicación pasa a llamarse SGIIPP-DISKANALIZER (título, manual, informes y ejecutable `sgiipp-diskanalizer.exe`).
+- La aplicación pasa a llamarse SGIIPP-DISKANALYZER (título, manual, informes y ejecutable `sgiipp-diskanalyzer.exe`).
 
 ## 1.3.1 — 2026-10-21
 
-- El ejecutable pasa a llamarse `spaceanalizer.exe`.
+- El ejecutable pasa a llamarse `spaceanalyzer.exe`.
 
 ## 1.3.0 — 2026-10-21
 

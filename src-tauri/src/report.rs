@@ -707,7 +707,7 @@ pub fn to_pdf(r: &Report) -> Vec<u8> {
             &fit_end(
                 Font::Regular,
                 8.0,
-                &join_nonempty(&[&format!("SGIIPP-DISKANALIZER v{}", env!("CARGO_PKG_VERSION")), &r.unit, &r.center], " · "),
+                &join_nonempty(&[&format!("SGIIPP-DISKANALYZER v{}", env!("CARGO_PKG_VERSION")), &r.unit, &r.center], " · "),
                 CONTENT_W - 70.0,
             ),
         );
@@ -745,7 +745,7 @@ fn assemble(pages: &[Canvas], title: &str, author: &str) -> Vec<u8> {
         &mut out,
         &mut offsets,
         format!(
-            "<< /Title {} /Author {} /Creator (SGIIPP-DISKANALIZER {}) /Producer (SGIIPP-DISKANALIZER) >>",
+            "<< /Title {} /Author {} /Creator (SGIIPP-DISKANALYZER {}) /Producer (SGIIPP-DISKANALYZER) >>",
             pdf_string(title),
             pdf_string(author),
             env!("CARGO_PKG_VERSION")
@@ -932,7 +932,7 @@ mod tests {
         assert!(t.contains("(CENTRO PENITENCIARIO DE PRUEBA)"), "banda en mayúsculas");
         assert!(t.contains("(Centro Penitenciario de Prueba)"), "cabecera");
         assert!(t.contains("Unidad de Pruebas \\267 Generado el"), "servicio en la banda");
-        assert!(t.contains("SGIIPP-DISKANALIZER v") && t.contains("Unidad de Pruebas \\267 Centro Penitenciario de Prueba"), "pie");
+        assert!(t.contains("SGIIPP-DISKANALYZER v") && t.contains("Unidad de Pruebas \\267 Centro Penitenciario de Prueba"), "pie");
         assert!(!t.contains("Guillermo") && !t.contains("GUILLERMO"), "no queda el nombre por defecto");
         assert!(t.contains("/Author (Unidad de Pruebas \\267 Centro Penitenciario de Prueba)"));
         // sin servicio: no quedan separadores sueltos

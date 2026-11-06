@@ -98,7 +98,7 @@ pub fn data_dir() -> PathBuf {
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local").join("share")))
         .unwrap_or_else(std::env::temp_dir);
-    base.join("SGIIPP-DISKANALIZER").join("escaneos")
+    base.join("SGIIPP-DISKANALYZER").join("escaneos")
 }
 
 fn fnv(s: &str) -> u64 {

@@ -36,6 +36,6 @@ json("package.json");
 json("package-lock.json");
 edit("src-tauri/Cargo.toml", (s) => s.replace(/^version = ".*"$/m, `version = "${v}"`));
 edit("src-tauri/Cargo.lock", (s) =>
-  s.replace(/(name = "sgiipp-diskanalizer"\nversion = ")[^"]*(")/, `$1${v}$2`),
+  s.replace(/(name = "sgiipp-diskanalyzer"\nversion = ")[^"]*(")/, `$1${v}$2`),
 );
-console.log("Recuerda añadir la entrada en CHANGELOG.md y generar el zip como sgiipp-diskanalizer-" + v + ".zip");
+console.log("Recuerda añadir la entrada en CHANGELOG.md y generar el zip como sgiipp-diskanalyzer-" + v + ".zip");

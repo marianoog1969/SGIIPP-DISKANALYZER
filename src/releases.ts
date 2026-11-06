@@ -10,6 +10,13 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.6.3",
+    date: "2026-11-06",
+    items: [
+      "Corregido el nombre de la aplicación: SGIIPP-DISKANALYZER (con Y), también en el ejecutable y en la carpeta de datos.",
+    ],
+  },
+  {
     version: "1.6.2",
     date: "2026-11-06",
     items: [
@@ -70,7 +77,7 @@ export const RELEASES: Release[] = [
   {
     version: "1.3.2",
     date: "2026-10-21",
-    items: ["La aplicación pasa a llamarse SGIIPP-DISKANALIZER (título, manual, informes y ejecutable)."],
+    items: ["La aplicación pasa a llamarse SGIIPP-DISKANALYZER (título, manual, informes y ejecutable)."],
   },
   {
     version: "1.3.0",

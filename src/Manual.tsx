@@ -16,7 +16,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         <p>
-          SGIIPP-DISKANALIZER muestra qué carpetas y archivos ocupan más sitio en una unidad local o de red, como hacen TreeSize o
+          SGIIPP-DISKANALYZER muestra qué carpetas y archivos ocupan más sitio en una unidad local o de red, como hacen TreeSize o
           WinDirStat. Sirve para localizar rápidamente dónde se está llenando un disco y, si hace falta, limpiar desde
           la propia aplicación.
         </p>
@@ -333,7 +333,7 @@ const SECTIONS: Section[] = [
     title: "Atajos de teclado",
     body: (
       <table>
-        <caption className="sr-only">Atajos de teclado de SGIIPP-DISKANALIZER</caption>
+        <caption className="sr-only">Atajos de teclado de SGIIPP-DISKANALYZER</caption>
         <thead>
           <tr>
             <th scope="col">Tecla</th>
@@ -391,7 +391,7 @@ const SECTIONS: Section[] = [
         </dd>
         <dt>El tamaño no coincide con el del Explorador</dt>
         <dd>
-          SGIIPP-DISKANALIZER suma el tamaño lógico de los archivos y no cuenta enlaces simbólicos ni uniones, para no contar dos
+          SGIIPP-DISKANALYZER suma el tamaño lógico de los archivos y no cuenta enlaces simbólicos ni uniones, para no contar dos
           veces lo mismo. El Explorador puede mostrar el espacio ocupado en disco.
         </dd>
         <dt>El informe PDF sale con otro nombre de centro</dt>
@@ -411,7 +411,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         <p>
-          SGIIPP-DISKANALIZER v{__APP_VERSION__}
+          SGIIPP-DISKANALYZER v{__APP_VERSION__}
           <br />
           Servicios de Informática · CIS Guillermo Miranda · Murcia
         </p>
@@ -499,7 +499,7 @@ export default function Manual({ onClose, section }: Props) {
       >
         <header className="manual-head">
           <h1 id="man-title" tabIndex={-1} ref={titleRef}>
-            Manual de SGIIPP-DISKANALIZER
+            Manual de SGIIPP-DISKANALYZER
           </h1>
           <span className="muted">v{__APP_VERSION__}</span>
           <button className="manual-close" onClick={onClose}>

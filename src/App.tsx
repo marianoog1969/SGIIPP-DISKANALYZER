@@ -635,7 +635,7 @@ export default function App() {
     try {
       const stamp = new Date().toISOString().slice(0, 10);
       const sel = await save({
-        defaultPath: `SGIIPP-DISKANALIZER - ${exportName()} - ${stamp}.${format}`,
+        defaultPath: `SGIIPP-DISKANALYZER - ${exportName()} - ${stamp}.${format}`,
         filters: [{ name: format === "pdf" ? "Informe PDF" : "CSV (Excel)", extensions: [format] }],
       });
       if (!sel) return;
@@ -978,7 +978,7 @@ export default function App() {
       {phase === "idle" && (
         <div className="home">
           <div className="hero">
-            <h1>SGIIPP-DISKANALIZER</h1>
+            <h1>SGIIPP-DISKANALYZER</h1>
             <p>
               Escribe una ruta de red (<code>\\servidor\recurso</code>), elige una unidad o pulsa «Examinar…».
               Se usan las credenciales de tu sesión de Windows.
@@ -1738,7 +1738,7 @@ export default function App() {
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="about-banner">
-              <h2 id="about-title">SGIIPP-DISKANALIZER</h2>
+              <h2 id="about-title">SGIIPP-DISKANALYZER</h2>
               <span>Analizador de espacio en disco · v{__APP_VERSION__}</span>
             </div>
             <dl className="credits">
@@ -1888,7 +1888,7 @@ export default function App() {
       <footer className="credits">
         <span>
           <button className="link-btn" onClick={() => setShowAbout(true)} title="Créditos y versión">
-            SGIIPP-DISKANALIZER v{__APP_VERSION__}
+            SGIIPP-DISKANALYZER v{__APP_VERSION__}
           </button>{" "}
           · Servicios de Informática · CIS Guillermo Miranda · Murcia
         </span>
