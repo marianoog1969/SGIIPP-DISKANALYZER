@@ -1906,3 +1906,17 @@ footer .keys .link-btn:hover {
   white-space: nowrap;
   font-size: 12px;
 }
+
+/* ───── 1.7: aviso de versiones ───── */
+.upd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 8px;
+  font-size: 13px;
+}
+.upd-new {
+  color: var(--accent);
+  font-weight: 600;
+}

@@ -417,6 +417,13 @@ const SECTIONS: Section[] = [
         </p>
         <p>Los créditos, el enlace y el código QR para donaciones voluntarias (PayPal) están en el botón «Acerca de» de la barra superior.</p>
         <p>
+          <strong>Versiones nuevas:</strong> al arrancar, la aplicación consulta en GitHub si hay una versión más reciente
+          y, si la hay, lo avisa en una franja con el botón «Ver descargas» (que abre la página en el navegador); no
+          descarga ni instala nada. La consulta solo pregunta cuál es la última versión publicada y no envía datos tuyos.
+          Se puede desactivar en <strong>Ajustes</strong>, y en «Acerca de» el botón «Buscar actualizaciones» la hace al
+          momento. Si no hay conexión, no se muestra nada.
+        </p>
+        <p>
           El historial de cambios de cada versión está en el archivo <code>CHANGELOG.md</code> que acompaña a la
           aplicación.
         </p>

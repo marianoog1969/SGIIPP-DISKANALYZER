@@ -2,6 +2,13 @@
 
 Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade una función, PATCH si solo se corrige un error.
 
+## 1.7.0 — 2026-11-06
+
+- Aviso de versión nueva: al arrancar se consulta en GitHub (`marianoog1969/SGIIPP-DISKANALYZER`) la última versión publicada y, si es más reciente, aparece una franja con «Ver descargas». No descarga ni instala nada.
+- «Acerca de» tiene el botón «Buscar actualizaciones».
+- Ajustes: casilla para desactivar el aviso. Sin conexión no se muestra nada.
+- El manual describe la función.
+
 ## 1.6.3 — 2026-11-06
 
 - Corregido el nombre: «DISKANALYZER» (con Y), en título, manual, informes, carpeta de datos y ejecutable `sgiipp-diskanalyzer.exe`.

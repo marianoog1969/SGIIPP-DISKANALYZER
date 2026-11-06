@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { api } from "./api";
+import { checkUpdate } from "./update";
 import Treemap from "./Treemap";
 import Manual from "./Manual";
 import Duplicates from "./Duplicates";
@@ -45,6 +46,8 @@ const LS_UNIT = "espacio.servicio";
 const LS_THEME = "espacio.tema";
 const LS_REMEMBER = "espacio.recordar";
 const LS_COLS = "espacio.columnas";
+const LS_UPDATES = "espacio.avisar-versiones";
+const LS_UPD_SEEN = "espacio.version-avisada";
 
 const DEFAULT_COLS = { size: 92, pct: 146, files: 76, date: 140, delta: 96 };
 type ColKey = keyof typeof DEFAULT_COLS;
@@ -172,6 +175,12 @@ export default function App() {
   const [cap, setCap] = useState<DriveSpace | null>(null);
   const [deltas, setDeltas] = useState<Map<number, Delta>>(new Map());
   const [remember, setRemember] = useState(() => loadText(LS_REMEMBER) !== "0");
+  const [notify, setNotify] = useState(() => loadText(LS_UPDATES) !== "0");
+  /** Versión nueva detectada al arrancar y aún no descartada. */
+  const [newVersion, setNewVersion] = useState<string | null>(null);
+  /** Resultado de la comprobación manual en «Acerca de». */
+  const [updMsg, setUpdMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [updBusy, setUpdBusy] = useState(false);
   const [manualSection, setManualSection] = useState<string | undefined>(undefined);
   const [scanSeq, setScanSeq] = useState(0);
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "size", desc: true });
@@ -211,6 +220,34 @@ export default function App() {
   const [topFiles, setTopFiles] = useState<TopFile[] | null>(null);
   const [exts, setExts] = useState<ExtStat[] | null>(null);
   const [errs, setErrs] = useState<ScanErr[] | null>(null);
+
+  // Al arrancar: ¿hay una versión nueva en GitHub? Si no hay red, no se dice nada.
+  useEffect(() => {
+    if (!notify) return;
+    let alive = true;
+    checkUpdate(__APP_VERSION__)
+      .then((u) => {
+        if (alive && u?.newer && loadText(LS_UPD_SEEN) !== u.latest) setNewVersion(u.latest);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const manualCheck = useCallback(() => {
+    setUpdBusy(true);
+    setUpdMsg(null);
+    checkUpdate(__APP_VERSION__)
+      .then((u) => {
+        if (!u) setUpdMsg({ text: "Todavía no hay versiones publicadas en GitHub.", ok: true });
+        else if (u.newer) setUpdMsg({ text: `Hay una versión nueva: ${u.latest} (tienes la ${__APP_VERSION__}).`, ok: false });
+        else setUpdMsg({ text: `Tienes la última versión (${__APP_VERSION__}).`, ok: true });
+      })
+      .catch(() => setUpdMsg({ text: "No se pudo consultar GitHub. Comprueba la conexión.", ok: true }))
+      .finally(() => setUpdBusy(false));
+  }, []);
 
   const flash = useCallback((msg: string) => {
     setToast(msg);
@@ -969,6 +1006,31 @@ export default function App() {
             Mostrar en el Explorador
           </button>
           <button onClick={() => setNotice(null)} aria-label="Cerrar">
+            ×
+          </button>
+        </div>
+      )}
+
+      {newVersion && (
+        <div className="banner info" role="status">
+          <span>
+            Hay una versión nueva: <b>{newVersion}</b> (tienes la {__APP_VERSION__}).
+          </span>
+          <button className="link-btn" onClick={() => api.openReleases().catch((e) => setError(String(e)))}>
+            Ver descargas
+          </button>
+          <button
+            onClick={() => {
+              try {
+                localStorage.setItem(LS_UPD_SEEN, newVersion);
+              } catch {
+                /* sin almacenamiento */
+              }
+              setNewVersion(null);
+            }}
+            aria-label="Descartar este aviso"
+            title="No volver a avisar de esta versión"
+          >
             ×
           </button>
         </div>
@@ -1777,6 +1839,21 @@ export default function App() {
                 </div>
               </div>
             </div>
+            <div className="upd">
+              <button disabled={updBusy} onClick={manualCheck}>
+                {updBusy ? "Comprobando…" : "Buscar actualizaciones"}
+              </button>
+              {updMsg && (
+                <span role="status" className={updMsg.ok ? "muted" : "upd-new"}>
+                  {updMsg.text}
+                </span>
+              )}
+              {updMsg && !updMsg.ok && updMsg.text.startsWith("Hay") && (
+                <button className="link-btn" onClick={() => api.openReleases().catch((e) => setError(String(e)))}>
+                  Ver descargas
+                </button>
+              )}
+            </div>
             <p className="muted small">© {new Date().getFullYear()} Servicios de Informática · CIS Guillermo Miranda · Murcia.</p>
             <div className="modal-actions">
               <button className="primary" autoFocus onClick={() => setShowAbout(false)}>
@@ -1835,6 +1912,22 @@ export default function App() {
                 }}
               />
               Recordar el tamaño de las carpetas de cada escaneo para ver el cambio en el siguiente
+            </label>
+            <label className="check" htmlFor="set-notify">
+              <input
+                id="set-notify"
+                type="checkbox"
+                checked={notify}
+                onChange={(e) => {
+                  setNotify(e.target.checked);
+                  try {
+                    localStorage.setItem(LS_UPDATES, e.target.checked ? "1" : "0");
+                  } catch {
+                    /* sin almacenamiento */
+                  }
+                }}
+              />
+              Avisar al arrancar si hay una versión nueva (consulta GitHub; surte efecto la próxima vez que abras el programa)
             </label>
             <button
               className="clear-history"

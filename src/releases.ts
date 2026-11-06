@@ -10,6 +10,15 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.7.0",
+    date: "2026-11-06",
+    items: [
+      "Aviso de versión nueva: al arrancar consulta en GitHub si hay una versión más reciente y, si la hay, lo indica con un botón «Ver descargas». No descarga ni instala nada.",
+      "En «Acerca de», botón «Buscar actualizaciones».",
+      "En Ajustes se puede desactivar el aviso. Sin conexión no se muestra nada.",
+    ],
+  },
+  {
     version: "1.6.3",
     date: "2026-11-06",
     items: [

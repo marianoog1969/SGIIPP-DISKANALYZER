@@ -881,6 +881,19 @@ fn open_donate() -> Result<(), String> {
     cmd.arg(DONATE_URL).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Página de descargas del proyecto. También fija: la interfaz no puede abrir otras direcciones.
+const RELEASES_URL: &str = "https://github.com/marianoog1969/SGIIPP-DISKANALYZER/releases/latest";
+
+/// Abre la página de la última versión en el navegador predeterminado.
+#[tauri::command]
+fn open_releases() -> Result<(), String> {
+    #[cfg(windows)]
+    let mut cmd = std::process::Command::new("explorer.exe");
+    #[cfg(not(windows))]
+    let mut cmd = std::process::Command::new("xdg-open");
+    cmd.arg(RELEASES_URL).spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn get_extensions(state: State<'_, AppState>, limit: usize) -> Result<Vec<ExtDto>, String> {
     with_tree(&state, |t| {
@@ -1188,6 +1201,7 @@ fn main() {
             get_report_defaults,
             reveal_path,
             open_donate,
+            open_releases,
             get_deltas,
             clear_history,
             get_treemap,
