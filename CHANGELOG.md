@@ -2,6 +2,15 @@
 
 Formato MAYOR.MINOR.PATCH: MAYOR si cambia algo incompatible, MINOR si se añade una función, PATCH si solo se corrige un error.
 
+## 1.6.2 — 2026-11-06
+
+- Corregido: en «Buscar» y «Archivos más grandes» la ruta de cada archivo se dibujaba como una caja encima del nombre (error de 1.6.1 con una clase de estilo repetida).
+
+## 1.6.1 — 2026-11-05
+
+- Mapa de disco rediseñado: huecos entre rectángulos, esquinas redondeadas, paleta de colores más armoniosa y etiquetas más legibles.
+- Anchos de columna por defecto reajustados (más espacio para el nombre).
+
 ## 1.6.0 — 2026-11-02
 
 - Nueva pestaña **Duplicados**: busca archivos idénticos (por tamaño y contenido), muestra el espacio recuperable y permite eliminar las copias sobrantes dejando siempre una.

@@ -10,6 +10,21 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.6.2",
+    date: "2026-11-06",
+    items: [
+      "Corregido: en «Buscar» y «Archivos más grandes» la ruta de cada archivo se superponía al nombre.",
+    ],
+  },
+  {
+    version: "1.6.1",
+    date: "2026-11-05",
+    items: [
+      "Mapa de disco rediseñado: huecos entre rectángulos, esquinas redondeadas, colores más armoniosos y etiquetas más legibles.",
+      "Anchos de columna por defecto reajustados para dejar más sitio al nombre.",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-11-02",
     items: [

@@ -607,11 +607,15 @@ td.c-size span {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 8px;
+  background: var(--panel);
 }
 .cell {
   position: absolute;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.38);
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
   color: #fff;
   padding: 4px 6px;
   overflow: hidden;
@@ -620,8 +624,18 @@ td.c-size span {
   line-height: 1.25;
   transition: filter 0.1s;
 }
+.cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.1));
+}
+.cell.nest::after {
+  display: none;
+}
 .cell:hover {
-  filter: brightness(1.18);
+  filter: brightness(1.12);
   z-index: 2;
 }
 .cell.dir {
@@ -631,16 +645,18 @@ td.c-size span {
   background: var(--rest);
 }
 .cl-name {
+  position: relative;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 .cl-size {
+  position: relative;
   font-size: 11.5px;
-  opacity: 0.88;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  opacity: 0.9;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 .legend {
   display: flex;
@@ -1348,7 +1364,7 @@ tbody tr.sel.hl {
 .cell.hl {
   filter: brightness(1.22);
   z-index: 3;
-  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 0 2px #fff;
 }
 .home {
   width: min(900px, 100%);
@@ -1584,8 +1600,12 @@ footer > span:first-child {
 .cell.nest {
   overflow: hidden;
 }
+.cell.nest {
+  padding: 3px 6px;
+}
 .cell.nest .cl-name {
   height: 14px;
+  font-size: 12.5px;
   display: flex;
   gap: 8px;
   align-items: baseline;
@@ -1599,24 +1619,36 @@ footer > span:first-child {
 .nested {
   position: absolute;
 }
-.sub {
+.tm-sub {
   position: absolute;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  border-radius: 5px;
   overflow: hidden;
-  padding: 1px 3px;
+  padding: 1px 4px;
   color: #fff;
-  filter: brightness(0.92);
 }
-.sub:hover {
-  filter: brightness(1.25);
+.tm-sub::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.08));
+}
+.tm-sub:hover {
+  filter: brightness(1.18);
   z-index: 2;
 }
-.sub.dir {
+.tm-sub.dir {
   cursor: pointer;
 }
-.sub.rest {
+.tm-sub.rest {
   background: var(--rest);
-  filter: none;
+  opacity: 0.55;
+}
+.tm-sub.rest::after {
+  display: none;
 }
 .sub-name {
   font-size: 10.5px;
@@ -1624,7 +1656,8 @@ footer > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  position: relative;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
 }
 
 /* ───── 1.6: capacidad, filtro, columnas, cambio, duplicados ───── */

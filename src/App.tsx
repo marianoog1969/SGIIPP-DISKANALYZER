@@ -46,7 +46,7 @@ const LS_THEME = "espacio.tema";
 const LS_REMEMBER = "espacio.recordar";
 const LS_COLS = "espacio.columnas";
 
-const DEFAULT_COLS = { size: 92, pct: 118, files: 76, date: 140, delta: 96 };
+const DEFAULT_COLS = { size: 92, pct: 146, files: 76, date: 140, delta: 96 };
 type ColKey = keyof typeof DEFAULT_COLS;
 
 function loadCols(): typeof DEFAULT_COLS {

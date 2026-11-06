@@ -198,7 +198,7 @@ export default function Treemap({
                     return (
                       <div
                         key={k ? k.id : "r"}
-                        className={"sub" + (k ? "" : " rest") + (k?.isDir ? " dir" : "")}
+                        className={"tm-sub" + (k ? "" : " rest") + (k?.isDir ? " dir" : "")}
                         style={{
                           left: s.x,
                           top: s.y,
